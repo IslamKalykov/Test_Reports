@@ -9,6 +9,12 @@ from views import read_xml_files, save_data_to_json, import_data_from_json
 
 load_dotenv()
 
+# Получите значения переменных из окружения
+HOST_DB = os.getenv('HOST_DB')
+USERNAME_DB = os.getenv('USERNAME_DB')
+PASSWORD_DB = os.getenv('PASSWORD_DB')
+DB_NAME = os.getenv('DB_NAME')
+
 # Получить значения для доступа на почту
 email_address = os.getenv('LOGIN')
 password = os.getenv('PASSWORD')
@@ -103,4 +109,4 @@ end_timestamp = str_to_timestamp(process_end_date) * 1000
 
 data = read_xml_files(xml_files_folder=f"{subdirectory}/SMS", folder_path=f"{subdirectory}", start_date=start_timestamp, end_date=end_timestamp)
 save_data_to_json(data=data, folder_path=subdirectory)
-import_data_from_json(folder_path=subdirectory)
+import_data_from_json(folder_path=subdirectory, host=HOST_DB, username=USERNAME_DB, database=DB_NAME, password=PASSWORD_DB)
