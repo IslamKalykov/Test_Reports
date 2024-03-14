@@ -8,6 +8,7 @@ from mysql.connector import Error
 import mysql.connector
 from models import Message
 import openpyxl
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +20,8 @@ PASSWORD_DB = os.getenv('PASSWORD_DB')
 DB_NAME = os.getenv('DB_NAME')
 
 # Функция для чтения данных из файла .xlsx
+
+
 def read_phone_numbers_from_xlsx(xlsx_folder):
     xlsx_files = [f for f in os.listdir(xlsx_folder) if f.endswith('.xlsx')]
     if not xlsx_files:
@@ -30,13 +33,16 @@ def read_phone_numbers_from_xlsx(xlsx_folder):
     ws = wb.active
 
     for row in ws.iter_rows(values_only=True):
-        phone_id = str(row[0]).strip().lower()  # Приводим к нижнему регистру и удаляем лишние пробелы
+        # Приводим к нижнему регистру и удаляем лишние пробелы
+        phone_id = str(row[0]).strip().lower()
         phone_number = str(row[1]).strip()
         phone_numbers[phone_id] = phone_number
 
     return phone_numbers
 
 # Функция отвечающая за чтение данных из xml-файла
+
+
 def read_xml_files(xml_files_folder, folder_path, start_date=None, end_date=None):
     try:
         phone_numbers = read_phone_numbers_from_xlsx(folder_path)
@@ -76,7 +82,8 @@ def read_xml_files(xml_files_folder, folder_path, start_date=None, end_date=None
                         continue
 
                 # Получение номера телефона из словаря по id
-                phone_id = filename.split(' ')[1].strip().lower()  # Извлекаем id из названия файла
+                # Извлекаем id из названия файла
+                phone_id = filename.split(' ')[1].strip().lower()
                 phone_number = phone_numbers.get(f'phone {phone_id}')
 
                 if phone_number is not None:
@@ -94,7 +101,8 @@ def read_xml_files(xml_files_folder, folder_path, start_date=None, end_date=None
                     continue
 
     if None_phone:
-        print(f"Наблюдается ошибка с этими файлами: {set(None_phone)}\nУстрани ошибку и попробуй снова!")
+        print(
+            f"Наблюдается ошибка с этими файлами: {set(None_phone)}\nУстрани ошибку и попробуй снова!")
 
     return messages
 
@@ -102,6 +110,7 @@ def read_xml_files(xml_files_folder, folder_path, start_date=None, end_date=None
 def detect_encoding(text_bytes):
     result = chardet.detect(text_bytes)
     return result['encoding']
+
 
 def count_symbols(text):
     count = 0
@@ -112,17 +121,19 @@ def count_symbols(text):
             count += 1
     return count
 
+
 def calculate_segments(encoding, symbol_count):
     if encoding == 'ascii':
         return 1 if symbol_count <= 160 else math.ceil(symbol_count / 153)
     else:
         return 1 if symbol_count <= 70 else math.ceil(symbol_count / 67)
 
+
 def save_data_to_json(data, folder_path):
     with open(f'{folder_path}/data.json', 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, ensure_ascii=False, indent=4)
     print(f"Все данные сохранены в 'data.json'.")
-    
+
 
 def import_data_from_json(folder_path):
     try:
@@ -146,8 +157,9 @@ def import_data_from_json(folder_path):
             # Вставка данных в базу данных
             for item in data:
                 # Создание экземпляра модели и сохранение его в базе данных
+                date = datetime.fromtimestamp(int(item['date']) / 1000)
                 obj = Message(
-                    date=item['date'],
+                    date=date,
                     sender_id=item['sender_id'],
                     phone_number=item['phone_number'],
                     service_center=item['service_center'],
@@ -158,12 +170,13 @@ def import_data_from_json(folder_path):
 
                 # Выполнение запроса INSERT для сохранения данных
                 query = "INSERT INTO MESSAGES (date, sender_id, phone_number, service_center, sms_body, encoding, segments) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-                cursor.execute(query, (obj.date, obj.sender_id, obj.phone_number, obj.service_center, obj.sms_body, obj.encoding, obj.segments))
+                cursor.execute(query, (obj.date, obj.sender_id, obj.phone_number,
+                               obj.service_center, obj.sms_body, obj.encoding, obj.segments))
 
                 # Подтверждение изменений
                 conn.commit()
 
-            return {'message': 'Данные успешно импортированы.'}
+            print("Данные успешно импортированы.")
 
     except Error as e:
         print(f"Error while connecting to MySQL: {e}")
@@ -176,5 +189,3 @@ def import_data_from_json(folder_path):
             conn.close()
 
     return {'error': 'Произошла ошибка при импорте данных в базу данных.'}
-
-
